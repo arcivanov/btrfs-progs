@@ -163,6 +163,7 @@ fi
 convertfs=
 BTRFSCONVERT_EXT2=0
 BTRFSCONVERT_REISERFS=0
+BTRFSCONVERT_XFS=0
 if test "x$enable_convert" = xyes; then
 	if test "x$with_convert" = "xauto" || echo "$with_convert" | grep -q "ext2"; then
 		PKG_CHECK_MODULES(EXT2FS, [ext2fs])
@@ -181,12 +182,29 @@ if test "x$enable_convert" = xyes; then
 	if test "$BTRFSCONVERT_REISERFS" = 1; then
 		convertfs="${convertfs:+$convertfs,}reiserfs"
 	fi
+	if test "x$with_convert" == "xauto" || echo "$with_convert" | grep -q "xfs"; then
+		AX_CHECK_DEFINE([xfs/xfs.h], [XFS_MIN_BLOCKSIZE], [XFS_INCLUDE_FOUND=1],[XFS_INCLUDE_FOUND=0])
+		if test "$XFS_INCLUDE_FOUND" = 0 && echo "$with_convert" | grep -q "xfs"; then
+			AC_MSG_ERROR([XFS conversion support requested but XFS headers are not found])
+		fi
+
+		AC_CHECK_LIB([handle], [open_by_handle], [XFS_LIBHANDLE_FOUND=1],[XFS_LIBHANDLE_FOUND=0])
+		if test "$XFS_LIBHANDLE_FOUND" = 0 && echo "$with_convert" | grep -q "xfs"; then
+			AC_MSG_ERROR([XFS conversion support requested but XFS libhandle is not found])
+		fi
+
+		if test "$XFS_INCLUDE_FOUND" = 1 -a "$XFS_LIBHANDLE_FOUND" = 1; then
+			convertfs="${convertfs:+$convertfs,}xfs"
+			BTRFSCONVERT_XFS=1
+		fi
+	fi
 fi
 AC_SUBST([BTRFSCONVERT_EXT2])
 AC_SUBST([BTRFSCONVERT_REISERFS])
+AC_SUBST([BTRFSCONVERT_XFS])
 
 # catch typos
-tmp=$(echo "$with_convert" | sed -e 's/auto//' | sed -e 's/ext2//' | sed -e 's/reiserfs//' | sed -e 's/,\+//')
+tmp=$(echo "$with_convert" | sed -e 's/auto//' | sed -e 's/ext2//' | sed -e 's/reiserfs//' | sed -e 's/xfs//' | sed -e 's/,\+//')
 if ! test "x$tmp" = "x"; then
 	AC_MSG_ERROR([unknown tokens for --with-convert: $tmp])
 fi

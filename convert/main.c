@@ -108,6 +108,7 @@
 
 extern const struct btrfs_convert_operations ext2_convert_ops;
 extern const struct btrfs_convert_operations reiserfs_convert_ops;
+extern const struct btrfs_convert_operations xfs_convert_ops;
 
 static const struct btrfs_convert_operations *convert_operations[] = {
 #if BTRFSCONVERT_EXT2
@@ -115,6 +116,9 @@ static const struct btrfs_convert_operations *convert_operations[] = {
 #endif
 #if BTRFSCONVERT_REISERFS
 	&reiserfs_convert_ops,
+#endif
+#if BTRFSCONVERT_XFS
+	&xfs_convert_ops,
 #endif
 };
 
